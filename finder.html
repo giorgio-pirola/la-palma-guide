@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Buscador de Coordenadas - La Palma</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    max-width: 600px;
+    margin: 40px auto;
+    padding: 0 20px;
+  }
+  h1 { font-size: 1.3rem; }
+  input[type=text], textarea {
+    width: 100%;
+    padding: 10px;
+    font-size: 1rem;
+    margin-bottom: 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+  }
+  textarea { height: 60px; resize: vertical; }
+  #output {
+    background: #1b2a1f;
+    color: #cde8cf;
+    padding: 16px;
+    border-radius: 8px;
+    white-space: pre-wrap;
+    font-family: monospace;
+    font-size: 0.9rem;
+    min-height: 100px;
+  }
+  button {
+    background: #2a7f3e;
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+  }
+  button:hover { background: #246c35; }
+  #result-info {
+    background: #eef7ee;
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    font-size: 0.9rem;
+  }
+</style>
+</head>
+<body>
+
+<h1>📍 Buscador de Coordenadas - La Palma</h1>
+
+<label>Buscar lugar:</label>
+<input id="searchBox" type="text" placeholder="Escribe el nombre del restaurante/lugar...">
+
+<div id="result-info">Selecciona un resultado del desplegable para ver los datos aquí.</div>
+
+<label>Descripción (opcional, puedes editarla luego):</label>
+<textarea id="descBox" placeholder="Escribe una breve descripción..."></textarea>
+
+<button onclick="generateSnippet()">Generar código</button>
+
+<label>Código listo para copiar y pegar:</label>
+<div id="output">// Aquí aparecerá el código...</div>
+
+<script>
+let currentPlace = null;
+
+function generateSnippet() {
+  if (!currentPlace) {
+    document.getElementById('output').textContent = "⚠️ Primero selecciona un lugar de la lista.";
+    return;
+  }
+  const desc = document.getElementById('descBox').value || "DESCRIPCIÓN AQUÍ";
+  const snippet =
+`{
+  name: "${currentPlace.name}",
+  desc: "${desc}",
+  lat: ${currentPlace.lat},
+  lng: ${currentPlace.lng}
+},`;
+  document.getElementById('output').textContent = snippet;
+}
+
+function initAutocomplete() {
+  const input = document.getElementById('searchBox');
+  const autocomplete = new google.maps.places.Autocomplete(input, {
+    fields: ["name", "geometry", "formatted_address"],
+    // Bias results toward La Palma island
+    bounds: new google.maps.LatLngBounds(
+      { lat: 28.40, lng: -18.05 },  // SW corner
+      { lat: 28.85, lng: -17.65 }   // NE corner
+    ),
+    strictBounds: false
+  });
+
+  autocomplete.addListener('place_changed', () => {
+    const place = autocomplete.getPlace();
+    if (!place.geometry) {
+      document.getElementById('result-info').textContent = "⚠️ No se encontraron detalles para ese lugar.";
+      return;
+    }
+    currentPlace = {
+      name: place.name,
+      lat: place.geometry.location.lat().toFixed(4),
+      lng: place.geometry.location.lng().toFixed(4)
+    };
+    document.getElementById('result-info').innerHTML =
+      `<b>${place.name}</b><br>${place.formatted_address}<br>lat: ${currentPlace.lat}, lng: ${currentPlace.lng}`;
+  });
+}
+</script>
+
+<!-- Replace YOUR_API_KEY below with your actual key -->
+<script async
+  src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places&callback=initAutocomplete">
+</script>
+
+</body>
+</html>
