@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>La Palma - Guía</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* SIDEBAR */
+  #sidebar {
+    width: 340px;
+    min-width: 340px;
+    background: #1b2a1f;
+    color: #fff;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    transition: margin-left 0.3s;
+  }
+  #sidebar.closed { margin-left: -340px; }
+
+  #sidebar h1 {
+    font-size: 1.2rem;
+    padding: 16px;
+    margin: 0;
+    background: #0e1812;
+    border-bottom: 2px solid #3c5b43;
+  }
+
+  .category {
+    border-bottom: 1px solid #2d4232;
+  }
+  .category-header {
+    padding: 14px 16px;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #24381f;
+  }
+  .category-header:hover { background: #2f4a2a; }
+  .category-header .dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+  }
+
+  .item-list {
+    display: none;
+    flex-direction: column;
+  }
+  .item-list.open { display: flex; }
+
+  .item {
+    padding: 10px 16px 10px 32px;
+    cursor: pointer;
+    border-bottom: 1px solid #1f2f22;
+    font-size: 0.92rem;
+  }
+  .item:hover { background: #2f4a2a; }
+  .item.active { background: #466b3f; font-weight: bold; }
+  .item small {
+    display: block;
+    color: #bcd4bb;
+    font-weight: normal;
+    margin-top: 3px;
+  }
+
+  /* MAP */
+  #map { flex: 1; height: 100%; }
+
+  /* TOGGLE BUTTON (mobile) */
+  #toggleBtn {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 1000;
+    background: #1b2a1f;
+    color: #fff;
+    border: none;
+    padding: 10px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    display: none;
+  }
+
+  @media (max-width: 768px) {
+    #sidebar { position: absolute; z-index: 999; height: 100%; }
+    #toggleBtn { display: block; }
+  }
+
+  /* Popup styling */
+  .popup-content b { font-size: 1.05rem; }
+  .popup-content a {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 6px 10px;
+    background: #2a7f3e;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 0.85rem;
+  }
+  .popup-content a:hover { background: #246c35; }
+</style>
+</head>
+<body>
+
+<button id="toggleBtn" onclick="document.getElementById('sidebar').classList.toggle('closed')">☰ Menú</button>
+
+<div id="sidebar">
+  <h1>🌋 La Palma - Guía de viaje</h1>
+  <div id="categoriesContainer"></div>
+</div>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+
+/* =========================================================
+   EDIT YOUR RECOMMENDATIONS HERE
+   Each entry needs: name, desc, lat, lng
+   Coordinates: easiest way is to right-click the spot on
+   Google Maps and copy the lat,lng shown.
+   ========================================================= */
+const data = {
+  restaurantes: {
+    label: "🍽️ Restaurantes",
+    color: "#e63946",
+    items: [
+      {
+        name: "Restaurante El Jardín de la Sal",
+        desc: "Vistas espectaculares a las salinas de Fuencaliente. Pescado fresco y ambiente tranquilo.",
+        lat: 28.4728,
+        lng: -17.8392
+      },
+      {
+        name: "La Fábrica Sancocho & Bar",
+        desc: "Sancocho canario tradicional, buena relación calidad-precio, en Los Llanos.",
+        lat: 28.6619,
+        lng: -17.9157
+      }
+    ]
+  },
+  attractions: {
+    label: "📸 Atracciones",
+    color: "#457b9d",
+    items: [
+      {
+        name: "Mirador del Roque de los Muchachos",
+        desc: "El mejor mirador de la isla, cielo estrellado espectacular de noche. Observatorios astronómicos.",
+        lat: 28.7558,
+        lng: -17.8853
+      },
+      {
+        name: "Charco Azul",
+        desc: "Piscinas naturales de aguas cristalinas en San Andrés.",
+        lat: 28.8372,
+        lng: -17.7656
+      }
+    ]
+  },
+  trails: {
+    label: "🥾 Senderos / Aventura",
+    color: "#2a9d8f",
+    items: [
+      {
+        name: "Ruta de los Volcanes",
+        desc: "Sendero icónico a lo largo de la cresta volcánica, exigente pero inolvidable (~18km).",
+        lat: 28.5120,
+        lng: -17.8390
+      },
+      {
+        name: "Barranco de las Angustias",
+        desc: "Ruta de barranco espectacular cerca del Parque Nacional de la Caldera de Taburiente.",
+        lat: 28.7205,
+        lng: -17.8965
+      }
+    ]
+  },
+  products: {
+    label: "🛍️ Productos locales",
+    color: "#f4a261",
+    items: [
+      {
+        name: "Plátanos de La Palma",
+        desc: "Compra plátanos locales en cualquier mercado agrícola (mercadillo de Los Llanos, sábados).",
+        lat: 28.6614,
+        lng: -17.9145
+      },
+      {
+        name: "Miel de Palma / Ron Miel",
+        desc: "Prueba el famoso ron miel canario, disponible en tiendas de productos locales en Santa Cruz de La Palma.",
+        lat: 28.6835,
+        lng: -17.7646
+      }
+    ]
+  }
+};
+
+/* ========================================================= */
+
+// Initialize map centered on La Palma
+const map = L.map('map').setView([28.68, -17.83], 10.5);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 18,
+  attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+// Store markers for later reference
+const markers = {}; // key: category_index -> marker
+
+function makeIcon(color) {
+  return L.divIcon({
+    className: '',
+    html: `<div style="
+        background:${color};
+        width:18px;height:18px;
+        border-radius:50% 50% 50% 0;
+        transform: rotate(-45deg);
+        border: 2px solid #fff;
+        box-shadow: 0 0 4px rgba(0,0,0,0.5);
+      "></div>`,
+    iconSize: [18, 18],
+    iconAnchor: [9, 18],
+    popupAnchor: [0, -18]
+  });
+}
+
+function gmapsLink(lat, lng) {
+  return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+}
+
+// Build sidebar + markers
+const container = document.getElementById('categoriesContainer');
+
+Object.entries(data).forEach(([catKey, cat]) => {
+  const catDiv = document.createElement('div');
+  catDiv.className = 'category';
+
+  const header = document.createElement('div');
+  header.className = 'category-header';
+  header.innerHTML = `<span><span class="dot" style="background:${cat.color}"></span>${cat.label}</span><span>▾</span>`;
+  header.onclick = () => {
+    list.classList.toggle('open');
+  };
+  catDiv.appendChild(header);
+
+  const list = document.createElement('div');
+  list.className = 'item-list';
+
+  cat.items.forEach((place, idx) => {
+    const marker = L.marker([place.lat, place.lng], { icon: makeIcon(cat.color) }).addTo(map);
+    const popupHtml = `
+      <div class="popup-content">
+        <b>${place.name}</b><br>
+        ${place.desc}<br>
+        <a href="${gmapsLink(place.lat, place.lng)}" target="_blank">📍 Cómo llegar</a>
+      </div>`;
+    marker.bindPopup(popupHtml);
+    markers[`${catKey}_${idx}`] = marker;
+
+    const itemDiv = document.createElement('div');
+    itemDiv.className = 'item';
+    itemDiv.innerHTML = `${place.name}<small>${place.desc}</small>`;
+    itemDiv.onclick = () => {
+      document.querySelectorAll('.item').forEach(i => i.classList.remove('active'));
+      itemDiv.classList.add('active');
+      map.flyTo([place.lat, place.lng], 14, { duration: 1.2 });
+      setTimeout(() => marker.openPopup(), 600);
+      if (window.innerWidth <= 768) {
+        document.getElementById('sidebar').classList.add('closed');
+      }
+    };
+    list.appendChild(itemDiv);
+  });
+
+  catDiv.appendChild(list);
+  container.appendChild(catDiv);
+});
+
+// Open first category by default
+document.querySelector('.item-list').classList.add('open');
+
+</script>
+</body>
+</html>
