@@ -382,7 +382,6 @@ const data = {
       }
     ]
   },
-
   products: {
     label: "🛍️ Local Products",
     color: "#f4a261",
@@ -395,31 +394,23 @@ const data = {
       },
       {
         name: "Mojo (rojo y verde)",
-        desc: "Classic Canarian sauces — red (spicy, paprika-based) and green (cilantro/parsley-based). Available in most local shops and markets. (Generic location — consider linking to a specific shop.)",
-        lat: 28.6619,
-        lng: -17.9157
+        desc: "Classic Canarian sauces — red (spicy, paprika-based) and green (cilantro/parsley-based). Available in most local shops and markets."
       },
       {
         name: "Barraquito",
-        desc: "Traditional Canarian layered coffee drink with condensed milk, coffee, and liqueur — try it at a local café. (Generic location — consider linking to a specific café.)",
-        lat: 28.6835,
-        lng: -17.7646
+        desc: "Traditional Canarian layered coffee drink with condensed milk, coffee, and liqueur — try it at any local café."
       },
       {
         name: "Papas Arrugadas",
-        desc: "Traditional wrinkled potatoes served with mojo sauce — a Canarian classic, available at most local restaurants.",
-        lat: 28.6619,
-        lng: -17.9157
+        desc: "Traditional wrinkled potatoes served with mojo sauce — a Canarian classic, available at most local restaurants."
       },
       {
         name: "Ron Aldea (local rum)",
-        desc: "Local rum distillery product from La Palma. (Approximate location — please verify exact distillery/shop.)",
-        lat: 28.6560,
-        lng: -17.9080
+        desc: "Local rum distillery product from La Palma."
       },
       {
         name: "Mercadillo de Puntagorda",
-        desc: "Famous local Sunday market with local produce, crafts, and food in Puntagorda. ",
+        desc: "Famous local Sunday market with local produce, crafts, and food in Puntagorda. (Approximate location — please verify.)",
         lat: 28.7690,
         lng: -17.9770
       },
@@ -494,32 +485,47 @@ Object.entries(data).forEach(([catKey, cat]) => {
   const list = document.createElement('div');
   list.className = 'item-list';
 
-  cat.items.forEach((place, idx) => {
-    const marker = L.marker([place.lat, place.lng], { icon: makeIcon(cat.color) }).addTo(map);
-    const popupHtml = `
-      <div class="popup-content">
-        <b>${place.name}</b><br>
-        ${place.desc}<br>
-        <a href="${gmapsLink(place.lat, place.lng)}" target="_blank">📍 Directions</a>
-      </div>`;
-    marker.bindPopup(popupHtml);
-    markers[`${catKey}_${idx}`] = marker;
+cat.items.forEach((place, idx) => {
+    const hasLocation = (place.lat !== undefined && place.lng !== undefined);
+    let marker = null;
+
+    if (hasLocation) {
+      marker = L.marker([place.lat, place.lng], { icon: makeIcon(cat.color) }).addTo(map);
+      const popupHtml = `
+        <div class="popup-content">
+          <b>${place.name}</b><br>
+          ${place.desc}<br>
+          <a href="${gmapsLink(place.lat, place.lng)}" target="_blank">📍 Directions</a>
+        </div>`;
+      marker.bindPopup(popupHtml);
+      markers[`${catKey}_${idx}`] = marker;
+    }
 
     const itemDiv = document.createElement('div');
     itemDiv.className = 'item';
     itemDiv.innerHTML = `${place.name}<small>${place.desc}</small>`;
-    itemDiv.onclick = () => {
-      document.querySelectorAll('.item').forEach(i => i.classList.remove('active'));
-      itemDiv.classList.add('active');
-      map.flyTo([place.lat, place.lng], 14, { duration: 1.2 });
-      setTimeout(() => marker.openPopup(), 600);
-      if (window.innerWidth <= 768) {
-        document.getElementById('sidebar').classList.add('closed');
-      }
-    };
+
+    if (hasLocation) {
+      itemDiv.onclick = () => {
+        document.querySelectorAll('.item').forEach(i => i.classList.remove('active'));
+        itemDiv.classList.add('active');
+        map.flyTo([place.lat, place.lng], 14, { duration: 1.2 });
+        setTimeout(() => marker.openPopup(), 600);
+        if (window.innerWidth <= 768) {
+          document.getElementById('sidebar').classList.add('closed');
+        }
+      };
+    } else {
+      // No location: just highlight the item, no map interaction
+      itemDiv.onclick = () => {
+        document.querySelectorAll('.item').forEach(i => i.classList.remove('active'));
+        itemDiv.classList.add('active');
+      };
+      itemDiv.style.cursor = 'default';
+    }
+
     list.appendChild(itemDiv);
   });
-
   catDiv.appendChild(list);
   container.appendChild(catDiv);
 });
