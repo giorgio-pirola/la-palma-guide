@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>La Palma - Guía</title>
+<title>La Palma - Travel Guide</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
@@ -78,6 +78,16 @@
     margin-top: 3px;
   }
 
+  .category-desc {
+    padding: 10px 16px;
+    font-size: 0.85rem;
+    color: #bcd4bb;
+    background: #1f2f22;
+    border-bottom: 1px solid #2d4232;
+    display: none;
+  }
+  .category-desc.open { display: block; }
+
   /* MAP */
   #map { flex: 1; height: 100%; }
 
@@ -119,10 +129,10 @@
 </head>
 <body>
 
-<button id="toggleBtn" onclick="document.getElementById('sidebar').classList.toggle('closed')">☰ Menú</button>
+<button id="toggleBtn" onclick="document.getElementById('sidebar').classList.toggle('closed')">☰ Menu</button>
 
 <div id="sidebar">
-  <h1>🌋 La Palma - Guía de viaje</h1>
+  <h1>🌋 La Palma - Travel Guide</h1>
   <div id="categoriesContainer"></div>
 </div>
 
@@ -134,77 +144,288 @@
 /* =========================================================
    EDIT YOUR RECOMMENDATIONS HERE
    Each entry needs: name, desc, lat, lng
-   Coordinates: easiest way is to right-click the spot on
-   Google Maps and copy the lat,lng shown.
+   Coordinates: right-click the spot on Google Maps and
+   copy the lat,lng shown, or read it from the URL after
+   clicking a search result (@lat,lng,zoom).
    ========================================================= */
 const data = {
-  restaurantes: {
-    label: "🍽️ Restaurantes",
+  restaurants: {
+    label: "🍽️ Restaurants",
     color: "#e63946",
     items: [
       {
-        name: "Restaurante El Jardín de la Sal",
-        desc: "Vistas espectaculares a las salinas de Fuencaliente. Pescado fresco y ambiente tranquilo.",
-        lat: 28.4728,
-        lng: -17.8392
+        name: "Arepería El Encuentro",
+        desc: "Venezuelan arepas: delicious arepas in the center of Santa Cruz. Best: 'Reina Pepiada' and 'Carne Mechada'.",
+        lat: 28.6849551,
+        lng: -17.7655525
       },
       {
-        name: "La Fábrica Sancocho & Bar",
-        desc: "Sancocho canario tradicional, buena relación calidad-precio, en Los Llanos.",
-        lat: 28.6619,
-        lng: -17.9157
+        name: "Casa Goyo",
+        desc: "Fish restaurant near the airport. Really good. Often runs out of fish or some dishes. Always crowded with potentially long queues.",
+        lat: 28.6141848,
+        lng: -17.7606602
+      },
+      {
+        name: "Chipi Chipi",
+        desc: "Canarian food, but known for grilled meat (barbecue).",
+        lat: 28.6818177,
+        lng: -17.7891787
+      },
+      {
+        name: "El Pulpo",
+        desc: "Very nice seafood restaurant in Los Cancajos, directly on the beach. Good quality and service. Best: 'Pulpo a la Gallega'.",
+        lat: 28.6528833,
+        lng: -17.7636477
+      },
+      {
+        name: "La Isla Verde",
+        desc: "Very nice brewery in Tijarafe. Nice draft beers and burgers with grilled cheese.",
+        lat: 28.6867659,
+        lng: -17.9735061
+      },
+      {
+        name: "La Muralla",
+        desc: "Really cool restaurant with an amazing glass view over the island. Try the potato nests. They even have a pet ostrich!",
+        lat: 28.7282162,
+        lng: -17.9631615
+      },
+      {
+        name: "Pizzería Piccolo",
+        desc: "Decent non-Neapolitan pizza in Santa Cruz.",
+        lat: 28.6855248,
+        lng: -17.838578
+      },
+      {
+        name: "Restaurante El Jardín de la Sal",
+        desc: "Best restaurant on the island! In the middle of the pink salt pools of Fuencaliente. Amazing food, good prices, view of the ocean.",
+        lat: 28.4543775,
+        lng: -17.8446317
       }
     ]
   },
+
   attractions: {
-    label: "📸 Atracciones",
+    label: "📸 Attractions",
     color: "#457b9d",
     items: [
       {
-        name: "Mirador del Roque de los Muchachos",
-        desc: "El mejor mirador de la isla, cielo estrellado espectacular de noche. Observatorios astronómicos.",
-        lat: 28.7558,
-        lng: -17.8853
+        name: "Poris de Candelaria",
+        desc: "Tiny, picturesque fishing hamlet built into the cliffs on the west coast, reachable by a short hike or boat. Great for photos.",
+        lat: 28.7029934,
+        lng: -17.9754405
       },
       {
-        name: "Charco Azul",
-        desc: "Piscinas naturales de aguas cristalinas en San Andrés.",
-        lat: 28.8372,
-        lng: -17.7656
+        name: "Destilerías Aldea",
+        desc: "Rum distillery of the local (amazing) Aldea Rum. Tour costs 10 euro and includes free tasting. Do not go emty-stomached!",
+        lat: 28.8086798,
+        lng: -17.7650308
+      },
+      {
+        name: "Centro de Visitantes Volcán San Antonio",
+        desc: "Aside from the small exhibition, the main attraction is the guided tour of the lava caves dug by the eruption of 1971 (I think).",
+        lat: 28.4870898,
+        lng: -17.850616
+        },
+      {
+        name: "Centro de Visitantes del Observatorio Roque de los Muchachos",
+        desc: "Brand new visitor center explaining the astrophysical observatory, with exhibits on astronomy and the telescopes above. For the observatory itself, see the 'Observatory' section below.",
+        lat: 28.7667234,
+        lng: -17.9088669
       }
     ]
   },
-  trails: {
-    label: "🥾 Senderos / Aventura",
+
+  observatory: {
+    label: "🔭 Roque de los Muchachos Observatory",
+    color: "#6a4c93",
+    description: "One of the world's premier astronomical observatories, sitting at ~2,400m altitude thanks to La Palma's exceptionally clear, dark skies. ⚠️ Rules: visits to most telescopes require a guided tour or prior reservation; do not use flashlights/flash photography at night; stay on marked paths; dress warmly (temperatures can be near freezing even in summer); road access may close due to weather or snow. Please verify current visiting rules before going.",
+    items: [
+      {
+        name: "Gran Telescopio Canarias (GTC)",
+        desc: "One of the largest optical telescopes in the world (10.4m mirror). Spanish-led international project. ",
+        lat: 28.756077,
+        lng: -17.8965726
+      },
+      {
+        name: "William Herschel Telescope",
+        desc: "A 4.2m optical/infrared telescope, one of the largest in Europe. ",
+        lat: 28.7606374,
+        lng: -17.8842912
+      },
+      {
+        name: "Isaac Newton Telescope",
+        desc: "A 2.5m telescope, historically important, relocated here from England. ",
+        lat: 28.7612,
+        lng: -17.8810
+      },
+      {
+        name: "Nordic Optical Telescope",
+        desc: "A 2.56m telescope operated by Nordic countries. ",
+        lat: 28.7571,
+        lng: -17.8846
+      },
+      {
+        name: "Telescopio Nazionale Galileo (TNG)",
+        desc: "Italian national telescope, 3.6m mirror. ",
+        lat: 28.7542,
+        lng: -17.8860
+      },
+      {
+        name: "Mercator Telescope",
+        desc: "Belgian 1.2m telescope used for variable star research. ",
+        lat: 28.7585,
+        lng: -17.8832
+      },
+      {
+        name: "Swedish Solar Telescope",
+        desc: "Specialized telescope for observing the Sun in high resolution. ",
+        lat: 28.7598,
+        lng: -17.8805
+      },
+      {
+        name: "MAGIC Telescopes",
+        desc: "Pair of Cherenkov telescopes, with 17m diameter mirrors, used for gamma-ray astronomy.",
+        lat: 28.7615,
+        lng: -17.8900
+      },
+      {
+        name: "CTA-Observatory",
+        desc: "Next-generation gamma-ray astronomy with Cherenkov Telescopes: 4 Large-Sized Telescopes (23m diameter) currently deployed.",
+        lat: 28.7615,
+        lng: -17.8900
+      },
+      {
+        name: "Liverpool Telescope",
+        desc: "Fully robotic 2m telescope, operated remotely from the UK. ",
+        lat: 28.7620,
+        lng: -17.8795
+      }
+    ]
+  },
+
+  beaches: {
+    label: "🏖️ Beaches & Sea Spots",
+    color: "#48cae4",
+    items: [
+      {
+        name: "Charco Azul",
+        desc: "Beautiful natural seawater pool carved into volcanic rock in San Andrés. Very popular, can get crowded.",
+        lat: 28.8372,
+        lng: -17.7656
+      },
+      {
+        name: "Charco Verde",
+        desc: "Another natural pool near Charco Azul, slightly quieter. ",
+        lat: 28.8370,
+        lng: -17.7660
+      },
+      {
+        name: "Piscina Natural de La Fajana",
+        desc: "Large natural swimming pools by the sea in the north of the island (Barlovento). ",
+        lat: 28.8395,
+        lng: -17.7650
+      },
+      {
+        name: "Playa de Puerto Naos",
+        desc: "The island's main black-sand beach resort area, good for swimming and sunset views.",
+        lat: 28.5760,
+        lng: -17.8690
+      },
+      {
+        name: "Playa de los Cancajos",
+        desc: "Calm black-sand beach near the airport, good for families and snorkeling.",
+        lat: 28.6525,
+        lng: -17.7645
+      }
+    ]
+  },
+
+  nature_trails: {
+    label: "🥾 Nature & Trails",
     color: "#2a9d8f",
     items: [
       {
         name: "Ruta de los Volcanes",
-        desc: "Sendero icónico a lo largo de la cresta volcánica, exigente pero inolvidable (~18km).",
+        desc: "Iconic trail along the volcanic ridge, demanding but unforgettable (~18km).",
         lat: 28.5120,
         lng: -17.8390
       },
       {
         name: "Barranco de las Angustias",
-        desc: "Ruta de barranco espectacular cerca del Parque Nacional de la Caldera de Taburiente.",
+        desc: "Spectacular ravine trail near the Caldera de Taburiente National Park.",
         lat: 28.7205,
         lng: -17.8965
+      },
+      {
+        name: "El Cubo de la Galga",
+        desc: "Beautiful laurel-forest trail (part of the ancient 'laurisilva') in Barranco de la Galga. ",
+        lat: 28.8220,
+        lng: -17.7680
+      },
+      {
+        name: "Caldera de Taburiente Viewpoint (La Cumbrecita)",
+        desc: "Classic viewpoint overlooking the vast volcanic Caldera de Taburiente crater. ",
+        lat: 28.7470,
+        lng: -17.8640
+      },
+      {
+        name: "Volcanic Eruption Viewpoint (Mirador de Los Campitos)",
+        desc: "Popular viewpoint overlooking the lava flows from the 2021 Tajogaite volcanic eruption. ",
+        lat: 28.6160,
+        lng: -17.8700
+      },
+      {
+        name: "Roque de los Muchachos Summit",
+        desc: "The highest point of La Palma (~2,426m), with spectacular panoramic views and the observatory complex nearby.",
+        lat: 28.7558,
+        lng: -17.8853
       }
     ]
   },
+
   products: {
-    label: "🛍️ Productos locales",
+    label: "🛍️ Local Products",
     color: "#f4a261",
     items: [
       {
         name: "Plátanos de La Palma",
-        desc: "Compra plátanos locales en cualquier mercado agrícola (mercadillo de Los Llanos, sábados).",
+        desc: "Buy local bananas at any agricultural market (Los Llanos market, Saturdays).",
         lat: 28.6614,
         lng: -17.9145
       },
       {
+        name: "Mojo (rojo y verde)",
+        desc: "Classic Canarian sauces — red (spicy, paprika-based) and green (cilantro/parsley-based). Available in most local shops and markets. (Generic location — consider linking to a specific shop.)",
+        lat: 28.6619,
+        lng: -17.9157
+      },
+      {
+        name: "Barraquito",
+        desc: "Traditional Canarian layered coffee drink with condensed milk, coffee, and liqueur — try it at a local café. (Generic location — consider linking to a specific café.)",
+        lat: 28.6835,
+        lng: -17.7646
+      },
+      {
+        name: "Papas Arrugadas",
+        desc: "Traditional wrinkled potatoes served with mojo sauce — a Canarian classic, available at most local restaurants.",
+        lat: 28.6619,
+        lng: -17.9157
+      },
+      {
+        name: "Ron Aldea (local rum)",
+        desc: "Local rum distillery product from La Palma. (Approximate location — please verify exact distillery/shop.)",
+        lat: 28.6560,
+        lng: -17.9080
+      },
+      {
+        name: "Mercadillo de Puntagorda",
+        desc: "Famous local Sunday market with local produce, crafts, and food in Puntagorda. ",
+        lat: 28.7690,
+        lng: -17.9770
+      },
+      {
         name: "Miel de Palma / Ron Miel",
-        desc: "Prueba el famoso ron miel canario, disponible en tiendas de productos locales en Santa Cruz de La Palma.",
+        desc: "Try the famous Canarian honey rum, available in local product shops in Santa Cruz de La Palma.",
         lat: 28.6835,
         lng: -17.7646
       }
@@ -258,8 +479,17 @@ Object.entries(data).forEach(([catKey, cat]) => {
   header.innerHTML = `<span><span class="dot" style="background:${cat.color}"></span>${cat.label}</span><span>▾</span>`;
   header.onclick = () => {
     list.classList.toggle('open');
+    if (descDiv) descDiv.classList.toggle('open');
   };
   catDiv.appendChild(header);
+
+  let descDiv = null;
+  if (cat.description) {
+    descDiv = document.createElement('div');
+    descDiv.className = 'category-desc';
+    descDiv.textContent = cat.description;
+    catDiv.appendChild(descDiv);
+  }
 
   const list = document.createElement('div');
   list.className = 'item-list';
@@ -270,7 +500,7 @@ Object.entries(data).forEach(([catKey, cat]) => {
       <div class="popup-content">
         <b>${place.name}</b><br>
         ${place.desc}<br>
-        <a href="${gmapsLink(place.lat, place.lng)}" target="_blank">📍 Cómo llegar</a>
+        <a href="${gmapsLink(place.lat, place.lng)}" target="_blank">📍 Directions</a>
       </div>`;
     marker.bindPopup(popupHtml);
     markers[`${catKey}_${idx}`] = marker;
