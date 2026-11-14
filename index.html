@@ -454,8 +454,11 @@ function makeIcon(color) {
   });
 }
 
+const ORIGIN_LAT = 28.6844678;
+const ORIGIN_LNG = -17.7687869;
+
 function gmapsLink(lat, lng) {
-  return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+  return `https://www.google.com/maps/dir/?api=1&origin=${ORIGIN_LAT},${ORIGIN_LNG}&destination=${lat},${lng}`;
 }
 
 // Build sidebar + markers
